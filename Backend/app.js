@@ -9,15 +9,16 @@ const userRoutes = require('./routes/user.routes');
 const captainRoutes = require('./routes/captain.routes');
 const mapsRoutes = require('./routes/maps.routes');
 const rideRoutes = require('./routes/ride.routes');
+const paymentRoutes = require('./routes/razorpay.routes.js');
 
 connectToDb();
-
-app.use(cors());
+app.use(cors({
+    origin: '*'// Allow all origins for testing purposes
+    
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-
-
 
 app.get('/', (req, res) => {
     res.send('Hello World');
@@ -27,9 +28,7 @@ app.use('/users', userRoutes);
 app.use('/captains', captainRoutes);
 app.use('/maps', mapsRoutes);
 app.use('/rides', rideRoutes);
-
-
-
+app.use('/payment', paymentRoutes);
 
 module.exports = app;
 

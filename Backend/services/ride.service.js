@@ -63,19 +63,32 @@ module.exports.createRide = async ({
 
     const fare = await getFare(pickup, destination);
 
-
-
-    const ride = rideModel.create({
+    const ride = await rideModel.create({
         user,
         pickup,
         destination,
         otp: getOtp(6),
-        fare: fare[ vehicleType ]
-    })
+        fare: fare[vehicleType]
+    });
+
+    const pickupCoordinates = await mapService.getAddressCoordinate(pickup);
+    const captainsInRadius = await mapService.getCaptainsInTheRadius(pickupCoordinates.ltd, pickupCoordinates.lng, 3);
+
+    const rideWithUser = await rideModel.findOne({ _id: ride._id }).populate('user').lean();
+
+    // Notify available captains within 3km radius
+    captainsInRadius.forEach(captain => {
+        sendMessageToSocketId(captain.socketId, {
+            event: 'new-ride',
+            data: {
+                ...rideWithUser,
+                fare: fare[vehicleType]
+            }
+        });
+    });
 
     return ride;
 }
-
 module.exports.confirmRide = async ({
     rideId, captain
 }) => {

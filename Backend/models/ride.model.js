@@ -1,58 +1,95 @@
-const mongoose = require('mongoose');
-
+const mongoose = require("mongoose");
 
 const rideSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'user',
-        required: true
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "user",
+    required:false
+  },
+  captain: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "captain",
+    required: function () {
+      return this.type !== "regular";
     },
-    captain: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'captain',
-    },
-    pickup: {
-        type: String,
-        required: true,
-    },
-    destination: {
-        type: String,
-        required: true,
-    },
-    fare: {
-        type: Number,
-        required: true,
-    },
+  },
+  type: {
+    type: String,
+    enum: ["regular", "rideshare"],
+    default: "regular",
+  },
+  pickup: {
+    type: String,
+    required: true,
+  },
+  destination: {
+    type: String,
+    required: true,
+  },
+  fare: {
+    type: Number,
+    required:true,
+    min:0
+  },
 
-    status: {
-        type: String,
-        enum: [ 'pending', 'accepted', "ongoing", 'completed', 'cancelled' ],
-        default: 'pending',
+  status: {
+    type: String,
+    enum: [
+      "pending",
+      "accepted",
+      "ongoing",
+      "completed",
+      "cancelled",
+      "available",
+    ],
+    default: function() {
+      return this.type === 'rideshare' ? 'available' : 'pending';
     },
+  },
 
-    duration: {
-        type: Number,
-    }, // in seconds
+  duration: {
+    type: Number,
+  }, // in seconds
 
-    distance: {
-        type: Number,
-    }, // in meters
+  distance: {
+    type: Number,
+  }, // in meters
 
-    paymentID: {
-        type: String,
+  paymentID: {
+    type: String,
+  },
+  orderId: {
+    type: String,
+  },
+  signature: {
+    type: String,
+  },
+
+  otp: {
+    type: String,
+    required: function () {
+      return this.type !== "rideshare";
     },
-    orderId: {
-        type: String,
+  },
+  // Add rideshare specific fields
+  maxPassengers: {
+    type: Number,
+    required: function () {
+      return this.type === "rideshare";
     },
-    signature: {
-        type: String,
+  },
+  pricePerSeat: {
+    type: Number,
+    required: function () {
+      return this.type === "rideshare";
     },
+  },
+  departureTime: {
+    type: Date,
+    required: function () {
+      return this.type === "rideshare";
+    },
+  },
+});
 
-    otp: {
-        type: String,
-        select: false,
-        required: true,
-    },
-})
-
-module.exports = mongoose.model('ride', rideSchema);
+module.exports = mongoose.model("ride", rideSchema);

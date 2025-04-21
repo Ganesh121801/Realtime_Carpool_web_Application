@@ -11,6 +11,27 @@ const CaptainContext = ({ children }) => {
         setCaptain(captainData);
     };
 
+    
+
+    const fetchCaptainData = async () => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${import.meta.env.VITE_BASE_URL}/captains/profile`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            const data = await response.json();
+            setCaptain(data.captain);
+            setError(null);
+        } catch (err) {
+            setError('Failed to fetch captain data');
+            setCaptain(null);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const value = {
         captain,
         setCaptain,
@@ -18,7 +39,8 @@ const CaptainContext = ({ children }) => {
         setIsLoading,
         error,
         setError,
-        updateCaptain
+        updateCaptain,
+        fetchCaptainData
     };
 
     return (

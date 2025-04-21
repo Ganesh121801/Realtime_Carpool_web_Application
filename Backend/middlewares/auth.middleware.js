@@ -23,7 +23,8 @@ module.exports.authUser = async (req, res, next) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await userModel.findById(decoded._id)
-
+        const captain = await captainModel.findById(decoded._id)
+        req.captain = captain;
         req.user = user;
 
         return next();
@@ -51,13 +52,17 @@ module.exports.authCaptain = async (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const captain = await captainModel.findById(decoded._id)
+        const captain = await captainModel.findById(decoded._id);
+
+        if (!captain) {
+            return res.status(404).json({ message: 'Captain not found' });
+        }
+
+        console.log('Authenticated captain:', captain._id); // Debug log
         req.captain = captain;
-
-        return next()
+        next();
     } catch (err) {
-        console.log(err);
-
-        res.status(401).json({ message: 'Unauthorized' });
+        console.error('Captain auth error:', err);
+        res.status(401).json({ message: 'Invalid token' });
     }
 }

@@ -1,9 +1,9 @@
 const socketIo = require('socket.io');
 const userModel = require('./models/user.model');
 const captainModel = require('./models/captain.model');
-
+const rideModel = require('./models/ride.model');
 let io;
-
+const messageModel = require('./models/message.model')
 function initializeSocket(server) {
     io = socketIo(server, {
         cors: {
@@ -41,6 +41,59 @@ function initializeSocket(server) {
                 }
             });
         });
+        socket.on('new-ride', async (data) => {
+            try {
+              const captain = await captainModel.findById(data.captainId);
+              if (captain && captain.socketId) {
+                // Make sure all required data is populated
+            const rideData = await rideModel.findById(data.rideId)
+            .populate('user')
+            .populate('captain');
+            
+        io.to(captain.socketId).emit('new-ride', {
+            event: 'new-ride',
+            data: rideData
+        });
+              }
+            } catch (error) {
+              console.error('Error handling rideshare request:', error);
+            }
+          });
+
+          socket.on('message', async (data) => {
+            const { senderId, receiverId, message } = data;
+        
+            if (!senderId || !receiverId || !message) {
+                console.error('Invalid message data:', data);
+                return;
+            }
+        
+            try {
+                // Try to find receiver in both user and captain collections
+                let receiver = await userModel.findById(receiverId);
+                if (!receiver) {
+                    receiver = await captainModel.findById(receiverId);
+                }
+                if (!receiver || !receiver.socketId) {
+                    console.error('Receiver not found or not connected:', receiverId);
+                    return;
+                }
+        
+                const savedMessage = await messageModel.create({
+                    sender: senderId,
+                    receiver: receiverId,
+                    message,
+                    timestamp: new Date(),
+                });
+        
+                // Send to receiver
+                io.to(receiver.socketId).emit('message', savedMessage);
+                // Optionally, also send to sender for instant feedback
+                io.to(socket.id).emit('message', savedMessage);
+            } catch (error) {
+                console.error('Error saving message:', error);
+            }
+        });
 
         socket.on('disconnect', () => {
             console.log(`Client disconnected: ${socket.id}`);
@@ -59,4 +112,20 @@ console.log(messageObject);
     }
 }
 
-module.exports = { initializeSocket, sendMessageToSocketId };
+
+const init = (server) => {
+    io = initializeSocket(server);
+    return io;
+};
+
+const getIO = () => {
+    if (!io) {
+        throw new Error('Socket.io not initialized!');
+    }
+    return io;
+};
+
+
+
+module.exports = { initializeSocket, sendMessageToSocketId ,init,
+    getIO };
